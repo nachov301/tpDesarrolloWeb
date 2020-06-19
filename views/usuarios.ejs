@@ -28,8 +28,8 @@
     <div class="container">
       <div class="items">
         <div class="">
-          <h5 class="item-d">Usuario</h5>
-          <h5 class="item-d">Password</h5>
+          <!-- <h5 class="item-d">Usuario</h5>
+          <h5 class="item-d">Password</h5> -->
         </div>
         <hr>
         <%users.forEach(function(user){%>
@@ -38,7 +38,7 @@
             <button class="btn btn-primary btn-item" type="submit" name="eliminar" value="<%= user._id %>">Eliminar</button>
           </form>
 
-          <h5 class="item-descripcion"><%=user.userName%></h5>
+          <h5 class="item-descripcion"><%=user.username%></h5>
           <h5 class="item"><%=user.password%></h5>
           <hr>
 

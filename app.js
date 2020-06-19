@@ -1,8 +1,12 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require('mongoose');
+const session = require("express-session");
+const passport = require("passport");
+const passportLocalMongoose = require("passport-local-mongoose");
 
 mongoose.connect('mongodb://localhost:27017/test', {useNewUrlParser: true, useUnifiedTopology: true});
+mongoose.set("useCreateIndex", true);
 
 const app = express();
 
@@ -11,10 +15,31 @@ app.set("view engine", "ejs");
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(express.static("public"));
 
-const usersSchema = {
-  userName: String,
+app.use(session({
+  secret: "secret",
+  resave: false,
+  saveUninitialized: false
+}));
+
+app.use(passport.initialize());
+app.use(passport.session());
+
+
+const usersSchema = new mongoose.Schema ({
+  username: String,
   password: String
-}
+});
+
+usersSchema.plugin(passportLocalMongoose);
+
+const User = mongoose.model("User", usersSchema);
+
+// use static authenticate method of model in LocalStrategy
+passport.use(User.createStrategy());
+
+// use static serialize and deserialize of model for passport session support
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
 
 const itemsSchema = {
   descripcion: String,
@@ -22,7 +47,7 @@ const itemsSchema = {
   precio: String
 }
 
-const User = mongoose.model("User", usersSchema);
+
 const Item = mongoose.model("Item", itemsSchema);
 
 //==================================GETS=====================================================
@@ -33,6 +58,8 @@ app.get("/", function(req, res){
 
 app.get("/items", function(req, res){
 
+if(req.isAuthenticated()){
+
   Item.find({}, function(err, foundItems){
     if(err){
       console.log(err);
@@ -40,6 +67,11 @@ app.get("/items", function(req, res){
       res.render("index", {items:foundItems});
     }
   });
+
+}else{
+  res.redirect("/");
+}
+
 
 });
 
@@ -76,91 +108,135 @@ app.post("/administrarUsuarios", function(req, res){
 });
 
 app.post("/logOut", function(req, res){
+  req.logout();
   res.redirect("/");
 });
 
 app.post("/login", function(req, res){
-  const userName = req.body.userName;
+  const username = req.body.username;
   const password = req.body.password;
 
-  console.log(userName);
+  console.log(username);
   console.log(password);
 
-  if((userName==="admin")&&(password==="admin")){
+  if((username==="admin")&&(password==="admin")){
 
-    Item.find({}, function(err, foundItems){
-      if(err){
-        console.log(err);
-      }else{
-        res.render("admin", {items:foundItems});
-      }
-    });
+   Item.find({}, function(err, foundItems){
+     if(err){
+       console.log(err);
+     }else{
+       res.render("admin", {items:foundItems});
+     }
+   });
 
-  }else{
+ }else{
 
-    User.findOne({userName: userName, password: password}, function(err, foundUser){
-      if(err){
-        console.log(err);
-        res.redirect("/");
-      }else{
-        if(foundUser){
+  const user = new User({
+    username: req.body.username,
+    password: req.body.password
+  });
 
-          if((foundUser.userName == userName) && (foundUser.password == password)){
-            console.log("user found");
+  req.login(user, function(err){
+    if(err){
+      console.log(err);
+    }else{
+      passport.authenticate("local")(req, res, function(){
+        res.redirect("/items");
+      });
+    }
+  });
 
-            Item.find({}, function(err, foundItems){
-              if(err){
-                console.log(err);
-              }else{
-                res.render("index", {items:foundItems});
-              }
-            });
-
-          }else{
-            console.log("not found");
-            res.redirect("/");
-          }
-
-        }else{
-          res.redirect("/");
-        }
-
-      }
-    });
-
-  }
+};
+  // if((username==="admin")&&(password==="admin")){
+  //
+  //   Item.find({}, function(err, foundItems){
+  //     if(err){
+  //       console.log(err);
+  //     }else{
+  //       res.render("admin", {items:foundItems});
+  //     }
+  //   });
+  //
+  // }else{
+  //
+  //   User.findOne({username: username, password: password}, function(err, foundUser){
+  //     if(err){
+  //       console.log(err);
+  //       res.redirect("/");
+  //     }else{
+  //       if(foundUser){
+  //
+  //         if((foundUser.username == username) && (foundUser.password == password)){
+  //           console.log("user found");
+  //
+  //           Item.find({}, function(err, foundItems){
+  //             if(err){
+  //               console.log(err);
+  //             }else{
+  //               res.render("index", {items:foundItems});
+  //             }
+  //           });
+  //
+  //         }else{
+  //           console.log("not found");
+  //           res.redirect("/");
+  //         }
+  //
+  //       }else{
+  //         res.redirect("/");
+  //       }
+  //
+  //     }
+  //   });
+  //
+  // }
 
 
 
 });
 
 app.post("/signUp", function(req, res){
-  const userName = req.body.userName;
-  const password = req.body.password;
 
-  console.log(userName);
-  console.log(password);
-
-  User.find({userName: userName}, function(err, foundUser){
+  User.register({username: req.body.username}, req.body.password, function(err, user){
+    console.log(req.body.username);
     if(err){
       console.log(err);
+      console.log("error");
+      res.redirect("/");
     }else{
-      console.log(foundUser);
-      if(foundUser != userName){
-        console.log("aca");
-
-        const newUser = User({
-          userName: userName,
-          password: password
-        });
-
-        newUser.save();
-
+      passport.authenticate("local")(req, res, function(){
         res.redirect("/items");
-      }
+      });
     }
 
   });
+
+  // const userName = req.body.userName;
+  // const password = req.body.password;
+  //
+  // console.log(userName);
+  // console.log(password);
+  //
+  // User.find({userName: userName}, function(err, foundUser){
+  //   if(err){
+  //     console.log(err);
+  //   }else{
+  //     console.log(foundUser);
+  //     if(foundUser != userName){
+  //       console.log("aca");
+  //
+  //       const newUser = User({
+  //         userName: userName,
+  //         password: password
+  //       });
+  //
+  //       newUser.save();
+  //
+  //       res.redirect("/items");
+  //     }
+  //   }
+  //
+  // });
 });
 
 app.post("/goSignUp", function(req, res){
