@@ -1,0 +1,51 @@
+body{
+  text-align: center;
+  margin: 5% 0;
+  background-image: -webkit-linear-gradient(65deg, #d4f1ff 50%, #ffe2d4 50%);
+}
+input{
+  margin: 20px auto;
+  display: block;
+  border-radius: 5%;
+  font-size: 1.5rem;
+  width: 100%;
+}
+h1{
+  font-size: 5rem;
+  margin-bottom: 50px;
+  padding-top: 80px;
+  font-family: "Great Vibes", cursive;
+  font-weight: 800;
+  color: #84c7fa;
+}
+.sign-up{
+  padding-bottom: 20%;
+}
+.login{
+  width: 100%;
+  margin-bottom: 10px;
+  background-color: #ffbd94;
+}
+.btn:hover{
+  background-color: #ffe2d4;
+}
+.leftAligned{
+  text-align: left;
+  margin-bottom: 30px;
+}
+.centered{
+  width: 30%;
+  background-color: #fff;
+  margin: auto;
+}
+.dataHolder{
+  padding: 5%;
+}
+
+.check{
+  display: inline-block;
+  width: 20px;
+  font-size: 2rem;
+  text-align: left;
+  margin: 0 auto;
+}
